@@ -537,6 +537,13 @@ def gguf_clip_loader(path):
             logging.warning(f"Dequantizing {temb_key} to prevent runtime OOM.")
             sd[temb_key] = dequantize_tensor(sd[temb_key], dtype=torch.float16)
         sd = sd_map_replace(sd, T5_SD_MAP)
+    elif arch == "qwen35" and "model.language_model.embed_tokens.weight" in sd:
+        # Pre-converted with tools/convert_qwen35.py: ComfyUI key names, llama.cpp changes already
+        # undone offline, so no remap/corrections and no fp16 copies of out_proj at load time.
+        temb_key = "model.language_model.embed_tokens.weight"
+        if is_quantized(sd[temb_key]):
+            logging.warning(f"Dequantizing {temb_key} to prevent runtime OOM.")
+            sd[temb_key] = dequantize_tensor(sd[temb_key], dtype=torch.float16)
     elif arch in {"llama", "qwen2vl", "qwen3", "qwen3vl", "qwen35", "gemma3"}:
         # TODO: pass model_options["vocab_size"] to loader somehow
         temb_key = "token_embd.weight"
